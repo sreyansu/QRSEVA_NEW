@@ -31,6 +31,8 @@
 | **Backend** | Firebase Cloud Functions (Node.js + TypeScript) |
 | **Database** | Firestore (primary) + Realtime Database (live orders/KDS) |
 | **Auth** | Firebase Auth (Email + Password, custom claims for RBAC) |
+| **Email (Contact)** | `qrsevatechnologiespvtltd@gmail.com` |
+| **Email (SMTP/Noreply)** | `noreply.qrseva@gmail.com` (via Gmail SMTP) |
 | **Hosting** | Netlify (frontend), Firebase (functions, rules) |
 | **Current Phase** | Documentation complete, implementation starting |
 
@@ -333,7 +335,63 @@ import { formatPrice, formatDate, formatPhone, validateGSTIN } from '@qrseva/uti
 
 ---
 
-## 🚀 Development & Deployment
+## � Email Service
+
+### Email Addresses
+
+| Purpose | Email | Usage |
+|---------|-------|-------|
+| **Contact / Support** | `qrsevatechnologiespvtltd@gmail.com` | Landing page contact form, footer, legal pages |
+| **SMTP / Noreply (From)** | `noreply.qrseva@gmail.com` | All transactional emails sent from Cloud Functions |
+
+### Gmail SMTP Transport (Nodemailer)
+
+```typescript
+// functions/src/utils/emailService.ts
+import * as nodemailer from 'nodemailer';
+import { defineSecret } from 'firebase-functions/params';
+
+const gmailUser = defineSecret('GMAIL_SMTP_USER');
+const gmailAppPassword = defineSecret('GMAIL_SMTP_APP_PASSWORD');
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: gmailUser.value(),          // noreply.qrseva@gmail.com
+    pass: gmailAppPassword.value(),   // Gmail App Password (NOT account password)
+  },
+});
+
+export async function sendEmail({ to, subject, template, data }: EmailOptions) {
+  const html = renderTemplate(template, data);
+  
+  await transporter.sendMail({
+    from: '"QRSeva" <noreply.qrseva@gmail.com>',
+    to,
+    subject,
+    html,
+  });
+}
+```
+
+> **Important**: Gmail free accounts allow **500 emails/day**. For higher volumes, consider upgrading to Google Workspace or switching to a service like Resend/Postmark.
+
+### Email Types
+
+| Template | Trigger | Recipient |
+|----------|---------|-----------|
+| `signup-received` | Self-service signup | Restaurant owner |
+| `signup-approved` | Sales approves restaurant | Restaurant owner |
+| `signup-rejected` | Sales rejects restaurant | Restaurant owner |
+| `welcome` | First login | Restaurant admin |
+| `password-reset` | Password reset request | Any user |
+| `subscription-expiring` | 3 days before expiry | Restaurant admin |
+| `subscription-expired` | Subscription expired | Restaurant admin |
+| `payment-receipt` | Payment received | Restaurant admin |
+
+---
+
+## �🚀 Development & Deployment
 
 ### Local Development
 ```bash

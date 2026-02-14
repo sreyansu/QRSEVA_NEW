@@ -1016,7 +1016,7 @@ export const rejectRestaurantSignup = functions.https.onCall(async (data, contex
       ownerName: restaurantData.ownerName || restaurantData.name,
       restaurantName: restaurantData.name,
       reason,
-      contactEmail: 'support@qrseva.in',
+      contactEmail: 'qrsevatechnologiespvtltd@gmail.com',
     },
   });
   

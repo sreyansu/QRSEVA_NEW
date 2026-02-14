@@ -292,11 +292,14 @@ firebase deploy
 
 ```bash
 # Set environment secrets for Cloud Functions
-firebase functions:secrets:set EMAIL_API_KEY
+firebase functions:secrets:set GMAIL_SMTP_USER        # noreply.qrseva@gmail.com
+firebase functions:secrets:set GMAIL_SMTP_APP_PASSWORD # Gmail App Password (NOT account password)
 firebase functions:secrets:set CASHFREE_APP_ID
 firebase functions:secrets:set CASHFREE_SECRET_KEY
 firebase functions:secrets:set FCM_VAPID_KEY
 ```
+
+> **Gmail SMTP Setup**: Generate an App Password at [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) for `noreply.qrseva@gmail.com`. Enable 2-Step Verification first. Gmail SMTP allows 500 emails/day on free accounts.
 
 ---
 
