@@ -1,0 +1,10 @@
+{
+    "rules": {
+        "live_orders": {
+            "$restaurantId": {
+                ".read": "auth != null && (auth.token.restaurantId === $restaurantId || auth.token.role === 'SALES_ADMIN')",
+                ".write": false
+            }
+        }
+    }
+}
