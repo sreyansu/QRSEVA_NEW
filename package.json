@@ -1,0 +1,21 @@
+{
+  "name": "qrseva-monorepo",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev:sales": "npm run dev --workspace=sales-dashboard",
+    "dev:admin": "npm run dev --workspace=admin-dashboard",
+    "dev:customer": "npm run dev --workspace=customer-app",
+    "dev:landing": "npm run dev --workspace=landing-page",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces"
+  },
+  "workspaces": [
+    "packages/*",
+    "sales-dashboard",
+    "admin-dashboard",
+    "customer-app",
+    "landing-page",
+    "functions"
+  ]
+}

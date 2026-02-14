@@ -1,0 +1,12 @@
+{
+    "name": "@qrseva/firebase-config",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "build": "tsc"
+    },
+    "dependencies": {
+        "firebase": "^10.11.0"
+    }
+}

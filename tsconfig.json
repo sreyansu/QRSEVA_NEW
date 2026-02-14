@@ -1,0 +1,32 @@
+{
+    "files": [],
+    "references": [
+        {
+            "path": "./packages/shared-types"
+        },
+        {
+            "path": "./packages/shared-ui"
+        },
+        {
+            "path": "./packages/firebase-config"
+        },
+        {
+            "path": "./packages/utils"
+        },
+        {
+            "path": "./sales-dashboard"
+        },
+        {
+            "path": "./admin-dashboard"
+        },
+        {
+            "path": "./customer-app"
+        },
+        {
+            "path": "./landing-page"
+        },
+        {
+            "path": "./functions"
+        }
+    ]
+}
