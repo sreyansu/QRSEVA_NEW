@@ -1,0 +1,40 @@
+# QRSeva Project Rules
+
+You are working on QRSeva — an Indian restaurant QR ordering & management SaaS platform.
+
+## MANDATORY: Read AGENTS.md before writing any code.
+The file `AGENTS.md` in the project root contains the complete project context, architecture, conventions, and rules. Read it in full before making any changes.
+
+## Quick Reference
+
+- Domain: `qrseva.in` (NOT .com)
+- Frontend: React + TypeScript + Vite (separate app per surface)
+- Backend: Firebase Cloud Functions (TypeScript)
+- Database: Firestore (persistent) + Realtime Database (live orders/KDS)
+- Hosting: Netlify (frontend), Firebase (backend)
+- Currency: INR (₹), Indian market only
+
+## Project Structure
+- `sales-dashboard/` — Sales admin panel (sales.qrseva.in)
+- `admin-dashboard/` — Restaurant admin panel (admin.qrseva.in)
+- `customer-app/` — Customer ordering PWA (order.qrseva.in)
+- `landing-page/` — Marketing website (qrseva.in)
+- `packages/` — Shared UI, types, Firebase config, utils
+- `functions/` — Firebase Cloud Functions
+- `docs/` — All documentation (9 phases + deployment + SEO)
+
+## Critical Rules
+1. Each app is independent (separate package.json, vite.config.ts)
+2. Customer ordering has NO login — guest checkout only
+3. Restaurant self-signup creates PENDING account — sales must approve
+4. Use @qrseva/shared-types for all TypeScript interfaces
+5. Validate all Cloud Function inputs with Zod
+6. All data access is tenant-isolated (filter by restaurantId)
+7. Plan-gate premium features using PlanGate component
+8. Audit log all sensitive operations
+
+## Documentation
+Read phase docs in `docs/` folder for detailed specifications:
+- Phase 0: Architecture | Phase 1: Data Models | Phase 2: Auth & Sales
+- Phase 3: Admin Dashboard | Phase 4: Customer Ordering | Phase 5: KDS
+- Phase 6: Billing | Phase 7: Reports | Phase 8: Landing Page | Phase 9: Security
