@@ -68,7 +68,11 @@ flowchart TD
     B -->|No| C[Show Error Page]
     B -->|Yes| D{Subscription Active?}
     D -->|No| E[Show "Temporarily Unavailable"]
-    D -->|Yes| F[Load Menu]
+    D -->|Yes| D2{Kitchen Open?}
+    D2 -->|No| E2[Show "Kitchen Closed" banner with reason]
+    D2 -->|Yes| D3{Within Operating Hours?}
+    D3 -->|No| E3[Show "Outside Operating Hours" message]
+    D3 -->|Yes| F[Load Menu]
     F --> G[Browse Categories]
     G --> H[Add Items to Cart]
     H --> I[Review Cart]
@@ -85,6 +89,9 @@ flowchart TD
     Q -->|No| R[Show Error]
     Q -->|Yes| S[Order Confirmed - Show Token]
     S --> T[Track Order Status]
+    
+    style D2 fill:#FF6B6B,stroke:#333
+    style E2 fill:#FFD700,stroke:#333
 ```
 
 ---
@@ -132,6 +139,42 @@ flowchart TD
 - **Dietary filter pills**: Jain / Vegan / Gluten-Free (tap to filter)
 - **Language toggle**: EN | हि (switch to Hindi/regional language)
 - **Announcements banner**: Restaurant banners shown at top of menu
+- **Kitchen Closed overlay**: Full-page overlay when kitchen is closed (see below)
+
+#### Kitchen Closed State (Customer View)
+
+When `kitchenStatus.isOpen === false`, the menu page shows the menu **in read-only mode** with an overlay:
+
+```
+┌─────────────────────────────────┐
+│  🍽️ [Restaurant Logo]           │
+│  Restaurant Name                │
+│  ─────────────────────────────  │
+│  ┌─────────────────────────────┐│
+│  │  🔴 Kitchen is Currently     ││
+│  │     CLOSED                   ││
+│  │                              ││
+│  │  Reason: Holiday             ││
+│  │  Opens at: 6:00 PM today     ││
+│  │                              ││
+│  │  You can browse the menu     ││
+│  │  but ordering is paused.     ││
+│  └─────────────────────────────┘│
+│  ─────────────────────────────  │
+│  🟢 Paneer Tikka          ₹250  │ ← menu visible but grayed
+│  🔴 Butter Chicken        ₹350  │ ← "Add to Cart" disabled
+│  ...                            │
+│  ─────────────────────────────  │
+│  [Cart button hidden]           │
+└─────────────────────────────────┘
+```
+
+**Behavior when kitchen is closed:**
+- Menu items are visible (customers can browse)
+- "Add to Cart" buttons are **disabled**
+- Cart bar is **hidden**
+- A prominent banner explains the closure reason
+- If `scheduledReopen` exists, show countdown: "Opens in 2h 30m"
 
 ### 4.2 Cart Page
 
@@ -233,7 +276,31 @@ export const placeOrder = functions.https.onCall(async (data, context) => {
   // 2. CAPTCHA / abuse protection
   await verifyCaptcha(data.captchaToken);
   
-  // 3. Validate subscription
+  // 3. Check kitchen status (admin toggle)
+  const restaurant = await getRestaurant(restaurantId);
+  
+  if (!restaurant.kitchenStatus.isOpen) {
+    const reason = restaurant.kitchenStatus.closedReason || 'temporarily closed';
+    const reopen = restaurant.kitchenStatus.scheduledReopen;
+    throw error(
+      `Kitchen is ${reason}${reopen ? `. Expected to reopen at ${formatTime(reopen)}` : '. Please try again later.'}`
+    );
+  }
+  
+  // 3b. Check operating hours
+  const now = getCurrentTime(restaurant.settings.operatingHours.timezone);
+  const { open, close, closedDays } = restaurant.settings.operatingHours;
+  
+  if (closedDays.includes(now.getDay())) {
+    throw error('Restaurant is closed today. Please try again on a working day.');
+  }
+  
+  const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  if (currentTime < open || currentTime > close) {
+    throw error(`Restaurant is open from ${open} to ${close}. Please order during operating hours.`);
+  }
+  
+  // 4. Validate subscription
   const { valid, plan, features } = await validateSubscription(restaurantId);
   if (!valid) {
     throw error('Restaurant is currently not accepting orders');
@@ -422,7 +489,11 @@ function validateMinimumOrder(
   - [ ] Delivery address (conditional)
   - [ ] Payment mode selection
   - [ ] Order summary
+- [ ] Kitchen closed banner (read-only menu + closure reason + reopen countdown)
+- [ ] Operating hours & closed days check on menu page load
 - [ ] Implement placeOrder Cloud Function
+  - [ ] Kitchen status validation (isOpen check)
+  - [ ] Operating hours validation (open/close times + closedDays)
   - [ ] Subscription validation
   - [ ] Plan feature validation
   - [ ] Item pricing validation

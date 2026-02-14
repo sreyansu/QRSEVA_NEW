@@ -48,6 +48,7 @@ Navigation items are conditionally rendered based on the restaurant's current pl
 
 | Widget | Description | Plan |
 |--------|-------------|------|
+| **🟢 Kitchen Status** | **Open/Closed toggle (prominent, top of page)** | **All** |
 | Today's Orders | Count + trend | All |
 | Today's Revenue | Total ₹ amount | All |
 | Pending Orders | Orders needing attention | All |
@@ -56,6 +57,102 @@ Navigation items are conditionally rendered based on the restaurant's current pl
 | Top Items Today | Visual chart | PRIME+ |
 | Order Type Split | Pie chart | PRIME+ |
 | Revenue Trend | 7-day line chart | SUPER |
+
+#### Kitchen Status Toggle (Always Visible)
+
+The kitchen status toggle is the **most prominent element** on the admin dashboard home. It appears as a large banner at the top of the page.
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  🟢 Kitchen is OPEN                         [Close Kitchen]  │
+│  Accepting orders since 9:00 AM                              │
+└──────────────────────────────────────────────────────────────┘
+
+— OR (when closed) —
+
+┌──────────────────────────────────────────────────────────────┐
+│  🔴 Kitchen is CLOSED                        [Open Kitchen]  │
+│  Reason: Staff unavailable                                    │
+│  Reopens at: 6:00 PM today (auto)                            │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Close Kitchen** triggers a modal:
+- Reason (dropdown + custom text): Holiday, Staff unavailable, Maintenance, Emergency, Custom
+- Scheduled Reopen (optional): Date + time picker for auto-reopen
+- Confirm button: "Close Kitchen"
+
+**Cloud Function — Toggle Kitchen Status**:
+
+```typescript
+// functions/src/restaurants/toggleKitchenStatus.ts
+
+export const toggleKitchenStatus = functions.https.onCall(async (data, context) => {
+  requireAuth(context, 'RESTAURANT_ADMIN');
+  
+  const restaurantId = context.auth.token.restaurantId;
+  const { isOpen, closedReason, scheduledReopen } = data;
+  
+  const restaurantRef = admin.firestore().collection('restaurants').doc(restaurantId);
+  
+  if (isOpen) {
+    // Opening kitchen
+    await restaurantRef.update({
+      'kitchenStatus.isOpen': true,
+      'kitchenStatus.closedReason': admin.firestore.FieldValue.delete(),
+      'kitchenStatus.closedAt': admin.firestore.FieldValue.delete(),
+      'kitchenStatus.closedBy': admin.firestore.FieldValue.delete(),
+      'kitchenStatus.scheduledReopen': admin.firestore.FieldValue.delete(),
+    });
+  } else {
+    // Closing kitchen
+    await restaurantRef.update({
+      'kitchenStatus.isOpen': false,
+      'kitchenStatus.closedReason': closedReason || 'Temporarily closed',
+      'kitchenStatus.closedAt': admin.firestore.FieldValue.serverTimestamp(),
+      'kitchenStatus.closedBy': context.auth.uid,
+      ...(scheduledReopen && {
+        'kitchenStatus.scheduledReopen': admin.firestore.Timestamp.fromDate(new Date(scheduledReopen)),
+      }),
+    });
+  }
+  
+  // Audit log
+  await logAudit({
+    action: isOpen ? 'KITCHEN_OPENED' : 'KITCHEN_CLOSED',
+    performedBy: context.auth.uid,
+    restaurantId,
+    details: { closedReason, scheduledReopen },
+  });
+  
+  return { status: isOpen ? 'OPEN' : 'CLOSED' };
+});
+
+// Scheduled function: Auto-reopen kitchens
+export const autoReopenKitchens = functions.pubsub
+  .schedule('every 5 minutes')
+  .onRun(async () => {
+    const now = admin.firestore.Timestamp.now();
+    
+    const restaurants = await admin.firestore()
+      .collection('restaurants')
+      .where('kitchenStatus.isOpen', '==', false)
+      .where('kitchenStatus.scheduledReopen', '<=', now)
+      .get();
+    
+    const batch = admin.firestore().batch();
+    restaurants.docs.forEach(doc => {
+      batch.update(doc.ref, {
+        'kitchenStatus.isOpen': true,
+        'kitchenStatus.closedReason': admin.firestore.FieldValue.delete(),
+        'kitchenStatus.scheduledReopen': admin.firestore.FieldValue.delete(),
+      });
+    });
+    
+    await batch.commit();
+    console.log(`Auto-reopened ${restaurants.size} kitchens`);
+  });
+```
 
 ### 3.2 Orders Management
 
@@ -486,6 +583,10 @@ export function PlanGate({ requiredPlan, children, fallback }: PlanGateProps) {
 - [ ] Create admin layout with responsive sidebar
 - [ ] Implement plan-gated navigation
 - [ ] Build Dashboard Home with widgets
+  - [ ] Kitchen Open/Close toggle banner (prominent, top of page)
+  - [ ] Close Kitchen modal (reason dropdown + scheduled reopen picker)
+  - [ ] toggleKitchenStatus Cloud Function
+  - [ ] autoReopenKitchens scheduled function (every 5 min)
 - [ ] Build Orders management page
   - [ ] Order list with filters/tabs
   - [ ] Order detail view

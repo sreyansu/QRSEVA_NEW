@@ -13,7 +13,8 @@
 5. **Restaurant onboarding requires sales approval** — Self-signup creates a PENDING restaurant. Sales team must approve before the restaurant can log in.
 6. **Customer ordering has NO login** — Customers scan QR, browse menu, order with just name + phone. No customer auth.
 7. **Deploy frontend to Netlify, backend to Firebase** — NOT Firebase Hosting for frontend.
-8. **Indian market only** — Currency is INR (₹), phone format is Indian (+91, 10 digits starting with 6-9), GST compliance required.
+8. **Kitchen open/closed toggle** — Admin can close kitchen anytime. Customer menu shows "Kitchen Closed" banner. `placeOrder` validates `kitchenStatus.isOpen` before accepting orders.
+9. **Indian market only** — Currency is INR (₹), phone format is Indian (+91, 10 digits starting with 6-9), GST compliance required.
 
 ---
 

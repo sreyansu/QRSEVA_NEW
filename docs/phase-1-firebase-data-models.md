@@ -95,7 +95,14 @@ interface Restaurant {
   };
   logo?: string;                 // Cloud Storage URL
   gstin?: string;                // GST number (optional)
-  isActive: boolean;             // Master toggle
+  isActive: boolean;             // Master toggle (set by sales team)
+  kitchenStatus: {
+    isOpen: boolean;              // Kitchen accepting orders? (set by restaurant admin)
+    closedReason?: string;        // Optional reason: 'Holiday', 'Staff unavailable', etc.
+    closedAt?: Timestamp;         // When kitchen was closed
+    closedBy?: string;            // UID of admin who closed
+    scheduledReopen?: Timestamp;  // Auto-reopen at this time (optional)
+  };
   subscriptionId: string;        // Reference to active subscription
   currentPlan: 'LITE' | 'PRIME' | 'SUPER';
   planFeatures: {                // Denormalized for fast access
@@ -132,6 +139,7 @@ interface Restaurant {
       open: string;              // "09:00"
       close: string;             // "22:00"
       timezone: string;          // "Asia/Kolkata"
+      closedDays: number[];      // Days of week restaurant is closed [0=Sun, 6=Sat]
     };
     autoAcceptOrders: boolean;
   };
